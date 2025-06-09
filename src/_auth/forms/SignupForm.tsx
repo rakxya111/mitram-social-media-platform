@@ -1,19 +1,31 @@
-import React from "react";
-import {Form,FormControl,FormDescription,FormField,FormItem,FormLabel,FormMessage,} from "@/components/ui/form";
+import * as z from "zod";
+import {Form,FormControl,FormField,FormItem,FormLabel,FormMessage,} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { SignupValidation } from "@/lib/validation";
 import { Loader } from "lucide-react";
 import { createUserAccount } from "@/lib/appwrite/api";
+import { useToast } from "@/hooks/use-toast"
+import { useCreateUserAccount, useSignInAccount } from "@/lib/react-query/queriesAndMutation";
+import { useUserContext } from "@/context/AuthContext";
+
+
 
 
 
 const SignupForm = () => {
 
-  const isLoading = false;
+  const { toast } = useToast()
+  const {checkAuthUser, isLoading: isUserLoading} = useUserContext();
+
+  const navigate = useNavigate();
+
+  const { mutateAsync : createUserAccount, isLoading: isCreatingUser } = useCreateUserAccount();
+
+  const { mutateAsync: signInAccount, isLoading: isSignInAccount } = useSignInAccount();
 
   // 1. Define your form.
 
@@ -30,8 +42,33 @@ const SignupForm = () => {
   // 2. Define a submit handler.
  async function onSubmit(values: z.infer<typeof SignupValidation>) {
   const newUser = await createUserAccount(values); 
-  console.log(newUser)
   
+  if(!newUser){
+   return toast({
+          title: "Sign Up Failed. Please try again.",})
+
+  }
+
+  const session = await signInAccount({
+    email: values.email,
+    password: values.password,
+  }) 
+  if(!session){
+    return toast({ title: 'sign in failed. Please try again. '})
+  }
+
+  const isLoggedIn = await checkAuthUser();
+
+  if(isLoggedIn){
+    form.reset();
+
+    navigate('/')
+
+  }else {
+   return toast({ title: 'Sign up Failed. Please try again.' })
+  }
+
+
   }
 
   return (
@@ -100,7 +137,7 @@ const SignupForm = () => {
             )}
           />
           <Button type="submit" className="shad-button_primary mt-5">
-            {isLoading ? (
+            {isCreatingUser ? (
               <div className="flex-center gap-2">
                <Loader/> Loading......
               </div>
