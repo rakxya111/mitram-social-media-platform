@@ -5,19 +5,33 @@ import {
     useQueryClient,
     useInfiniteQuery,
 } from '@tanstack/react-query'
-import { createUserAccount, signInAccount } from '../appwrite/api'
+import { createUserAccount, signInAccount, signOutAccount, getCurrentUser } from '../appwrite/api'
 
 export const useCreateUserAccount = () => {
-    return useMutation({
-        mutationFn: (user: INewUser) => createUserAccount(user)
-    })
-}
+  return useMutation({
+    mutationFn: (user: INewUser) => createUserAccount(user),
+  });
+};
 
 export const useSignInAccount = () => {
-    return useMutation({
-        mutationFn: (user: {
-            email: string; password: string;
-        }) => signInAccount(user),
-    });
-}
+  return useMutation({
+    mutationFn: (user: { email: string; password: string }) =>
+      signInAccount(user),
+  });
+};
 
+// ADD: Sign out mutation
+export const useSignOutAccount = () => {
+  return useMutation({
+    mutationFn: signOutAccount,
+  });
+};
+
+// ADD: Get current user query
+export const useGetCurrentUser = () => {
+  return useQuery({
+    queryKey: ['getCurrentUser'],
+    queryFn: getCurrentUser,
+    enabled: false, // Only run when explicitly called
+  });
+};

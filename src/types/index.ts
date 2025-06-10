@@ -1,13 +1,11 @@
 export type IContextType = {
   user: IUser;
   isLoading: boolean;
-  setUser: React.Dispatch<React.SetStateAction<IUser>>
+  setUser: React.Dispatch<React.SetStateAction<IUser>>;
   isAuthenticated: boolean;
-  setIsAuthentciated: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>; // Fixed typo
   checkAuthUser: () => Promise<boolean>;
 }
-
-
 
 export type INavLink = {
   imgURL: string;

@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { createContext, useContext, useEffect, useState } from "react";
 
-import { IUser } from "@/types";
-import { getCurrentUser } from "@/lib/appwrite/api";
+import type { IUser } from "@/types";
+import { getCurrentUser, checkActiveSession } from "@/lib/appwrite/api";
 
 export const INITIAL_USER = {
   id: "",
@@ -42,7 +42,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuthUser = async () => {
     setIsLoading(true);
     try {
+      // First check if there's an active session
+      const activeSession = await checkActiveSession();
+      
+      if (!activeSession) {
+        setIsAuthenticated(false);
+        return false;
+      }
+
+      // If session exists, get user data
       const currentAccount = await getCurrentUser();
+      
       if (currentAccount) {
         setUser({
           id: currentAccount.$id,
@@ -53,13 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           bio: currentAccount.bio,
         });
         setIsAuthenticated(true);
-
         return true;
       }
 
       return false;
     } catch (error) {
       console.error(error);
+      setIsAuthenticated(false);
       return false;
     } finally {
       setIsLoading(false);
@@ -67,16 +77,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const cookieFallback = localStorage.getItem("cookieFallback");
-    if (
-      cookieFallback === "[]" ||
-      cookieFallback === null ||
-      cookieFallback === undefined
-    ) {
-      navigate("/sign-in");
-    }
+    // FIX: Check authentication first, then navigate based on result
+    const initializeAuth = async () => {
+      const isLoggedIn = await checkAuthUser();
+      
+      // Only check cookie fallback if not authenticated
+      if (!isLoggedIn) {
+        const cookieFallback = localStorage.getItem("cookieFallback");
+        if (
+          cookieFallback === "[]" ||
+          cookieFallback === null ||
+          cookieFallback === undefined
+        ) {
+          navigate("/sign-in");
+        }
+      }
+    };
 
-    checkAuthUser();
+    initializeAuth();
   }, []);
 
   const value = {

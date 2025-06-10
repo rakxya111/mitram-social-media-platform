@@ -1,10 +1,9 @@
-import { ID,Query } from 'appwrite';
+import { ID, Query } from 'appwrite';
 import { account, appwriteConfig, avatars, databases } from './config';
 import type { INewUser } from '@/types';
 
-
-export async function createUserAccount(user: INewUser){
-    try{
+export async function createUserAccount(user: INewUser) {
+    try {
         const newAccount = await account.create(
             ID.unique(),
             user.email,
@@ -12,31 +11,31 @@ export async function createUserAccount(user: INewUser){
             user.name
         );
 
-      if(!newAccount) throw Error;
+        if (!newAccount) throw Error;
 
-      const avatarUrl = avatars.getInitials(user.name);
+        const avatarUrl = avatars.getInitials(user.name);
 
-      const newUser = await saveUserToDB({
-        accountId: newAccount.$id,
-        name: newAccount.name,
-        email: newAccount.email,
-        username: user.username,
-        imageUrl: avatarUrl,
-      });
+        const newUser = await saveUserToDB({
+            accountId: newAccount.$id,
+            name: newAccount.name,
+            email: newAccount.email,
+            username: user.username,
+            imageUrl: avatarUrl,
+        });
 
         return newUser;
-    }catch (error) {
+    } catch (error) {
         console.log(error);
         return error;
     }
 }
 
-export async function saveUserToDB(user : {
-    accountId : string;
+export async function saveUserToDB(user: {
+    accountId: string;
     name: string;
     email: string;
     imageUrl: string;
-    username?:string;
+    username?: string;
 }) {
     try {
         const newUser = await databases.createDocument(
@@ -45,40 +44,65 @@ export async function saveUserToDB(user : {
             ID.unique(),
             user,
         );
-        
+
         return newUser;
-    } catch(error) {
-        console.log(error)
-    }
-
-}
-
-export async function signInAccount(user: { email : string; password: string; }) {
-    try {
-        const session = await account.createEmailPasswordSession(user.email,user.password);
-        return session;
-    } catch(error) {
+    } catch (error) {
         console.log(error);
+        throw error;
     }
 }
 
+// FIX: Use correct Appwrite method for email/password login
+export async function signInAccount(user: { email: string; password: string; }) {
+    try {
+        const session = await account.createEmailPasswordSession(user.email, user.password);
+        return session;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
+// FIX: Better error handling
 export async function getCurrentUser() {
     try {
-      const currentAccount = await account.get();
+        const currentAccount = await account.get();
 
-      if(!currentAccount) throw Error;
+        if (!currentAccount) throw Error;
 
-      const currentUser = await databases.listDocuments(
-        appwriteConfig.databaseId,
-        appwriteConfig.userCollectionId,
-        [Query.equal('accountId', currentAccount.$id)]
-      )
+        const currentUser = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.userCollectionId,
+            [Query.equal('accountId', currentAccount.$id)]
+        );
 
-      if(!currentUser) throw Error;
+        if (!currentUser.documents.length) throw Error;
 
-      return currentUser.documents[0];
-    } catch(error) {
+        return currentUser.documents[0];
+    } catch (error) {
         console.log(error);
+        throw error;
     }
+}
 
+// ADD: Sign out function
+export async function signOutAccount() {
+    try {
+        const session = await account.deleteSession('current');
+        return session;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
+// ADD: Check if user has active session
+export async function checkActiveSession() {
+    try {
+        const session = await account.getSession('current');
+        return session;
+    } catch (error) {
+        console.log(error);
+        return null;
+    }
 }
