@@ -20,7 +20,7 @@ export async function createUserAccount(user: INewUser) {
             name: newAccount.name,
             email: newAccount.email,
             username: user.username,
-            imageUrl: avatarUrl,
+            ImageUrl: avatarUrl,
         });
 
         return newUser;
@@ -34,7 +34,7 @@ export async function saveUserToDB(user: {
     accountId: string;
     name: string;
     email: string;
-    imageUrl: string;
+    ImageUrl: string;
     username?: string;
 }) {
     try {
@@ -52,13 +52,19 @@ export async function saveUserToDB(user: {
     }
 }
 
-// FIX: Use correct Appwrite method for email/password login
-export async function signInAccount(user: { email: string; password: string; }) {
+// ✅ SIGN IN ACCOUNT (deletes old session if any)
+export async function signInAccount(user: { email: string; password: string }) {
     try {
+        try {
+            await account.deleteSession('current'); // Prevents duplicate session error
+        } catch (err) {
+            // No active session — safe to ignore
+        }
+
         const session = await account.createEmailPasswordSession(user.email, user.password);
         return session;
-    } catch (error) {
-        console.log(error);
+    } catch (error: any) {
+        console.error("signInAccount error:", error.message, error.response);
         throw error;
     }
 }
@@ -85,24 +91,24 @@ export async function getCurrentUser() {
     }
 }
 
-// ADD: Sign out function
+// ✅ SIGN OUT
 export async function signOutAccount() {
     try {
         const session = await account.deleteSession('current');
         return session;
-    } catch (error) {
-        console.log(error);
+    } catch (error: any) {
+        console.error("signOutAccount error:", error.message, error.response);
         throw error;
     }
 }
 
-// ADD: Check if user has active session
+// ✅ CHECK ACTIVE SESSION
 export async function checkActiveSession() {
     try {
         const session = await account.getSession('current');
         return session;
-    } catch (error) {
-        console.log(error);
+    } catch (error: any) {
+        console.error("checkActiveSession error:", error.message, error.response);
         return null;
     }
 }
