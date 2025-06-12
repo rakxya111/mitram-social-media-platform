@@ -6,31 +6,54 @@ import {Form,FormControl,FormField,FormItem,FormLabel,FormMessage,} from "@/comp
 import { Input } from "@/components/ui/input";
 import { Textarea } from "../ui/textarea";
 import FileUploader from "../shared/FileUploader";
+import { PostValidation } from "@/lib/validation";
+import type { Models } from "appwrite";
+// import { CreatePost } from "@/_root/pages";
+import { useUserContext } from "@/context/AuthContext";
+import { toast, useToast } from "@/hooks/use-toast";
+import { useCreatePost } from "@/lib/react-query/queriesAndMutation";
+import { Navigate, useNavigate } from "react-router-dom";
 
+type PostFormProps = {
+  post?: Models.Document;
+}
 
-const formSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-});
+const PostForm = ({ post } : PostFormProps) => {
+  
 
-
-const PostForm = () => {
-    
-  // 1. Define your form.
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const { mutateAsync: createPost } = useCreatePost();
+  const { toast } = useToast();
+  const { user } = useUserContext();
+  const navigate = useNavigate();
+   
+ // 1. Define your form.
+  const form = useForm<z.infer<typeof PostValidation>>({
+    resolver: zodResolver(PostValidation),
     defaultValues: {
-      username: "",
+      caption: post ? post?.caption : "",
+      file: [],
+      location: post ? post?.location : "",
+      tags: post ? post.tags.join(',') : ''
     },
   });
 
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(value: z.infer<typeof PostValidation>) {
+    
+    const newPost = await createPost({
+      ...value,
+      userId: user.id,
+    });
+
+      if(!newPost) {
+    toast({
+      title: 'Please try again'
+    });
   }
+
+  navigate('/');
+
+};
 
   return (
     <Form {...form}>
@@ -47,7 +70,7 @@ const PostForm = () => {
               <FormControl>
                 <Textarea
                   className="shad-textarea custom-scrollbar"
-                  placeholder="shadcn"
+                  placeholder="add a caption"
                   {...field}
                 />
               </FormControl>
@@ -63,7 +86,10 @@ const PostForm = () => {
             <FormItem>
               <FormLabel className="shad-form_label">Add Photos</FormLabel>
               <FormControl>
-                <FileUploader />
+                <FileUploader 
+                fieldChange={field.onChange}
+                mediaUrl={post?.imageUrl}
+                />
               </FormControl>
               <FormMessage className="shad-form_message" />
             </FormItem>
@@ -72,12 +98,12 @@ const PostForm = () => {
 
         <FormField
           control={form.control}
-          name="loaction"
+          name="location"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="shad-form_label">Add Location</FormLabel>
               <FormControl>
-                <input type="text" className="shad-input" />
+                <Input type="text" className="shad-input ml-3"  {...field} />
               </FormControl>
               <FormMessage className="shad-form_message" />
             </FormItem>
@@ -86,17 +112,18 @@ const PostForm = () => {
 
         <FormField
           control={form.control}
-          name="loaction"
+          name="tags"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="shad-form_label">
-                Add Tags(seprated by comma " , ")
+              <FormLabel className="shad-form_label mr-3">
+                Add Tags(separated by comma " , ")
               </FormLabel>
               <FormControl>
-                <input
+                <Input
                   type="text"
                   className="shad-input"
-                  placeholder="Art, Expression, Learn"
+                  placeholder="  Art, Expression, Learn.."
+                   {...field}
                 />
               </FormControl>
               <FormMessage className="shad-form_message" />
