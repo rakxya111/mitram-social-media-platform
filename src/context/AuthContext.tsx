@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { createContext, useContext, useEffect, useState } from "react";
 
 import type { IUser } from "@/types";
-import { getCurrentUser, checkActiveSession } from "@/lib/appwrite/api";
+import { getCurrentUser } from "@/lib/appwrite/api";
 
 export const INITIAL_USER = {
   id: "",
@@ -42,15 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuthUser = async () => {
     setIsLoading(true);
     try {
-      // First check if there's an active session
-      const activeSession = await checkActiveSession();
-      
-      if (!activeSession) {
-        setIsAuthenticated(false);
-        return false;
-      }
-
-      // If session exists, get user data
+      // Get user data to check authentication
       const currentAccount = await getCurrentUser();
       
       if (currentAccount) {
@@ -66,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       }
 
+      setIsAuthenticated(false);
       return false;
     } catch (error) {
       console.error(error);
