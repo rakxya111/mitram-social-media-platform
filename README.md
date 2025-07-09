@@ -12,5 +12,6 @@
   - Tailwind CSS
   - shadcn/ui
 
- **Backend** (Coming Soon)....
+ **Backend** 
+ - Appwrite
 
